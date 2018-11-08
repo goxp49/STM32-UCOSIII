@@ -26,7 +26,9 @@ void BSP_Init(void)
     cpu_clk_freq = BSP_CPU_ClkFreq();                           //获取 CPU 内核时钟频率（SysTick 工作时钟）
     cnts = cpu_clk_freq / (CPU_INT32U)OSCfg_TickRate_Hz;        //根据用户设定的时钟节拍频率计算 SysTick 定时器的计数值
     OS_CPU_SysTickInit(cnts);                                   //调用 SysTick 初始化函数，设置定时器计数值和启动定时器
+    
     LED_GPIO_Config();  /* LED 端口初始化 */
+	Key_GPIO_Config();
 }
 
 /*

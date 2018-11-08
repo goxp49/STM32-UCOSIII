@@ -12,6 +12,13 @@
 
 #include "includes.h"
 
+static OS_TCB SEM_KEY_TCB;
+static CPU_STK SEM_KEY_Stk[128];
+
+static OS_TCB SEM_LED_TCB;
+static CPU_STK SEM_LED_Stk[128];
+
+
 OS_SEM SemOfKey;          //标志KEY1是否被单击的多值信号量
 
 int main(void)
@@ -25,12 +32,12 @@ int main(void)
 
 	/*创建任务*/
 
-	 OSTaskCreate((OS_TCB	  *)&TIMER_TCB,	   //任务控制块指针
-					  (CPU_CHAR   *)"LED2", 	  //任务名称
-					  (OS_TASK_PTR )Task_TIMER,	  //任务代码指针
+	 OSTaskCreate((OS_TCB *)&SEM_KEY_TCB,	   //任务控制块指针
+					  (CPU_CHAR   *)"KEY", 	  //任务名称
+					  (OS_TASK_PTR )Task_SEM_KEY_SCAN,	  //任务代码指针
 					  (void 	  *)0,			  //传递给任务的参数parg
 					  (OS_PRIO	   )3,			  //任务优先级
-					  (CPU_STK	  *)&TIMER_Stk[0],	  //任务堆栈基地址
+					  (CPU_STK	  *)&SEM_KEY_Stk[0],	  //任务堆栈基地址
 					  (CPU_STK_SIZE)12, 		  //堆栈剩余警戒线
 					  (CPU_STK_SIZE)128,		  //堆栈大小
 					  (OS_MSG_QTY  )0,			  //可接收的最大消息队列数
@@ -38,18 +45,65 @@ int main(void)
 					  (void 	  *)0,			  //任务控制块扩展信息
 					  (OS_OPT	   )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),  //任务选项
 					  (OS_ERR	  *)&err);		  //返回值
+					  
+	OSTaskCreate((OS_TCB *)&SEM_LED_TCB,	  //任务控制块指针
+						 (CPU_CHAR	 *)"LED",		 //任务名称
+						 (OS_TASK_PTR )Task_SEM_LED,	 //任务代码指针
+						 (void		 *)0,			 //传递给任务的参数parg
+						 (OS_PRIO	  )2,			 //任务优先级
+						 (CPU_STK	 *)&SEM_LED_Stk[0], 	 //任务堆栈基地址
+						 (CPU_STK_SIZE)12,			 //堆栈剩余警戒线
+						 (CPU_STK_SIZE)128, 		 //堆栈大小
+						 (OS_MSG_QTY  )0,			 //可接收的最大消息队列数
+						 (OS_TICK	  )0,			 //时间片轮转时间
+						 (void		 *)0,			 //任务控制块扩展信息
+						 (OS_OPT	  )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),  //任务选项
+						 (OS_ERR	 *)&err);		 //返回值
 
     OSStart(&err);
 
 
 }
 
-/*
- * 函数名：Task_LED
- * 描述  : LED流水灯
- * 输入  ：无
- * 输出  : 无
- */
+
+void Task_SEM_KEY_SCAN(void *p_arg)
+{
+	OS_ERR err;
+
+    (void)p_arg;                		// 'p_arg' 并没有用到，防止编译器提示警告
+
+	OSSemCreate((OS_SEM *) &SemOfKey,
+		(CPU_CHAR *) "key_scan",
+		(OS_SEM_CTR) 0,
+		(OS_ERR *) &err);
+
+	while(1)
+	{		
+		if(Key_Scan(GPIOA, GPIO_Pin_0) == KEY_ON)
+		{
+			OSSemPost(&SemOfKey, OS_OPT_POST_ALL, &err);
+		}
+
+	};
+
+}
+
+void Task_SEM_LED(void *p_arg)
+{
+	OS_ERR err;
+
+    (void)p_arg;
+
+	while(1)
+	{		
+		OSSemPend(&SemOfKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS*)0, &err);
+		LED1_Switch();
+	};
+
+}
+
+
+//-------------------------------------------------------------------------------------------------------
 
 void Task_LED1(void *p_arg)
 {
@@ -112,24 +166,4 @@ void TmrCallBack(OS_TMR *p_tmr, void *p_arg)
 
 }
 //-------------------------------------------------------------------------------------------------------
-
-void Task_KEY_SCAN(void *p_arg)
-{
-	OS_ERR err;
-	OS_TMR tmr;
-	uint8_t keyStatus;
-
-    (void)p_arg;                		// 'p_arg' 并没有用到，防止编译器提示警告
-
-	OSSemCreate((OS_SEM *) &SemOfKey,
-		(CPU_CHAR *) "key_scan",
-		(OS_SEM_CTR) 0,
-		(OS_ERR *) &err);
-
-	while(Key_Scan() == KEY_OFF)
-	{
-
-	};
-
-}
 

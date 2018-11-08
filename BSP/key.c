@@ -37,13 +37,13 @@ void Key_GPIO_Config(void)
 	GPIO_InitTypeDef GPIO_InitStructure;
 	
 	/*开启按键端口（PE5）的时钟*/
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE,ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA,ENABLE);
 	
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5; 
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0; 
 //	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz; 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; 
 	
-	GPIO_Init(GPIOE, &GPIO_InitStructure);
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
  /*
@@ -59,11 +59,11 @@ uint8_t Key_Scan(GPIO_TypeDef* GPIOx,u16 GPIO_Pin)
 	if(GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON ) 
 	{	   
 		/*延时消抖*/
-		Delay(10000);		
+		Delay(1000);		
 		if(GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON )  
 		{	 
 			/*等待按键释放 */
-			while(GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON);   
+			//while(GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON);   
 			return 	KEY_ON;	 
 		}
 		else
