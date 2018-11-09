@@ -63,7 +63,7 @@ uint8_t Key_Scan(GPIO_TypeDef* GPIOx,u16 GPIO_Pin)
 		if(GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON )  
 		{	 
 			/*µÈ´ý°´¼üÊÍ·Å */
-			//while(GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON);   
+			while(GPIO_ReadInputDataBit(GPIOx,GPIO_Pin) == KEY_ON);   
 			return 	KEY_ON;	 
 		}
 		else

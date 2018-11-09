@@ -19,7 +19,7 @@ static OS_TCB SEM_LED_TCB;
 static CPU_STK SEM_LED_Stk[128];
 
 
-OS_SEM SemOfKey;          //标志KEY1是否被单击的多值信号量
+static OS_SEM SemOfKey;          //标志KEY1是否被单击的多值信号量
 
 int main(void)
 {
@@ -29,6 +29,12 @@ int main(void)
 	CPU_Init();			//CPU初始化
 	OSInit(&err);		//系统初始化
 	Mem_Init();
+	
+	OSSemCreate((OS_SEM *) &SemOfKey,
+		(CPU_CHAR *) "key_scan",
+		(OS_SEM_CTR) 0,
+		(OS_ERR *) &err);
+
 
 	/*创建任务*/
 
@@ -40,7 +46,7 @@ int main(void)
 					  (CPU_STK	  *)&SEM_KEY_Stk[0],	  //任务堆栈基地址
 					  (CPU_STK_SIZE)12, 		  //堆栈剩余警戒线
 					  (CPU_STK_SIZE)128,		  //堆栈大小
-					  (OS_MSG_QTY  )0,			  //可接收的最大消息队列数
+					  (OS_MSG_QTY  )5,			  //可接收的最大消息队列数
 					  (OS_TICK	   )0,			  //时间片轮转时间
 					  (void 	  *)0,			  //任务控制块扩展信息
 					  (OS_OPT	   )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),  //任务选项
@@ -54,7 +60,7 @@ int main(void)
 						 (CPU_STK	 *)&SEM_LED_Stk[0], 	 //任务堆栈基地址
 						 (CPU_STK_SIZE)12,			 //堆栈剩余警戒线
 						 (CPU_STK_SIZE)128, 		 //堆栈大小
-						 (OS_MSG_QTY  )0,			 //可接收的最大消息队列数
+						 (OS_MSG_QTY  )5,			 //可接收的最大消息队列数
 						 (OS_TICK	  )0,			 //时间片轮转时间
 						 (void		 *)0,			 //任务控制块扩展信息
 						 (OS_OPT	  )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),  //任务选项
@@ -71,11 +77,6 @@ void Task_SEM_KEY_SCAN(void *p_arg)
 	OS_ERR err;
 
     (void)p_arg;                		// 'p_arg' 并没有用到，防止编译器提示警告
-
-	OSSemCreate((OS_SEM *) &SemOfKey,
-		(CPU_CHAR *) "key_scan",
-		(OS_SEM_CTR) 0,
-		(OS_ERR *) &err);
 
 	while(1)
 	{		
