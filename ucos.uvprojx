@@ -552,6 +552,11 @@
               <FileType>1</FileType>
               <FilePath>.\BSP\key.c</FilePath>
             </File>
+            <File>
+              <FileName>usart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\BSP\usart.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

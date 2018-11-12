@@ -28,7 +28,8 @@ void BSP_Init(void)
     OS_CPU_SysTickInit(cnts);                                   //调用 SysTick 初始化函数，设置定时器计数值和启动定时器
     
     LED_GPIO_Config();  /* LED 端口初始化 */
-	Key_GPIO_Config();
+	//Key_GPIO_Config();
+	USART1_Config();
 }
 
 /*

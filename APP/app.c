@@ -12,7 +12,7 @@
 
 #include "includes.h"
 
-static OS_Q * p_q;
+static OS_Q p_q;
 
 static OS_TCB Q_POST_TCB;
 static CPU_STK Q_POST_Stk[128];
@@ -20,7 +20,8 @@ static CPU_STK Q_POST_Stk[128];
 static OS_TCB Q_PEND_TCB;
 static CPU_STK Q_PEND_Stk[128];
 
-static OS_SEM SemOfKey;          //标志KEY1是否被单击的多值信号量
+void Task_QUEUE_POST(void *p_arg);
+void Task_QUEUE_PEND(void *p_arg);
 
 int main(void)
 {
@@ -31,10 +32,10 @@ int main(void)
 	OSInit(&err);		//系统初始化
 	Mem_Init();
 
-	OSQCreate((OS_Q *) p_q,
+	OSQCreate((OS_Q *) &p_q,
 		(CPU_CHAR *) "queue",
 		(OS_MSG_QTY) 20,
-		(OS_ERR *) &err)
+		(OS_ERR *) &err);
 
 	/*创建任务*/
 
@@ -54,7 +55,7 @@ int main(void)
 
 	OSTaskCreate((OS_TCB *)&Q_PEND_TCB,	  //任务控制块指针
 						 (CPU_CHAR	 *)"LED",		 //任务名称
-						 (OS_TASK_PTR )Task_SEM_LED,	 //任务代码指针
+						 (OS_TASK_PTR )Task_QUEUE_PEND,	 //任务代码指针
 						 (void		 *)0,			 //传递给任务的参数parg
 						 (OS_PRIO	  )2,			 //任务优先级
 						 (CPU_STK	 *)&Q_PEND_Stk[0], 	 //任务堆栈基地址
@@ -80,11 +81,11 @@ void Task_QUEUE_POST(void *p_arg)
 
 	while(1)
 	{
-		OSQPost((OS_Q *) p_q,
+		OSQPost((OS_Q *) &p_q,
 			(void *) "Hellow",
 			(OS_MSG_SIZE) sizeof("Hellow"),
 			(OS_OPT)  OS_OPT_POST_FIFO | OS_OPT_POST_ALL,
-			(OS_ERR) * err)
+			(OS_ERR *) &err);
 
 		OSTimeDlyHMSM( 0, 0, 0, 500, OS_OPT_TIME_PERIODIC, &err);
 	};
@@ -93,19 +94,37 @@ void Task_QUEUE_POST(void *p_arg)
 
 void Task_QUEUE_PEND(void *p_arg)
 {
+	OS_MSG_SIZE p_msg_size;
 	OS_ERR err;
+	char * Message;
+	u8 i;
     (void)p_arg;                		// 'p_arg' 并没有用到，防止编译器提示警告
 
-
+	
 	while(1)
 	{
-		os
+		Message = (char *)OSQPend((OS_Q *)&p_q, 0, OS_OPT_PEND_BLOCKING, &p_msg_size, (void *)0, &err);
+		if(err == OS_ERR_NONE)
+		{
+		
+			CPU_SR_ALLOC();
+			OS_CRITICAL_ENTER();
+
+			for(i=0; i<(sizeof("Hellow")-1); i++)
+			{
+				USART_SendMessage(*Message);
+				Message++;
+			}
+
+			OS_CRITICAL_EXIT();
+		}
 	};
 
 }
 
 
 #if(0)
+static OS_SEM SemOfKey;          //标志KEY1是否被单击的多值信号量
 
 void Task_SEM_KEY_SCAN(void *p_arg)
 {

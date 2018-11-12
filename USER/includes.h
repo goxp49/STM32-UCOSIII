@@ -55,6 +55,7 @@
 #include 	"led.h"			//LED驱动函数
 #include  	"BSP.h"			//与开发板相关的函数
 #include  	"key.h"			//与开发板相关的函数
+#include  	"usart.h"			//与开发板相关的函数
 
 
 /*
