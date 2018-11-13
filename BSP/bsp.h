@@ -4,5 +4,6 @@
 void SysTick_init(void);
 void BSP_Init(void);
 CPU_INT32U BSP_CPU_ClkFreq(void);
+void EXTI_Config(void);
 
 #endif // __BSP_H

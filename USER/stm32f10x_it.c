@@ -158,6 +158,15 @@ void SysTick_Handler(void)
 /**
   * @}
   */
+extern OS_TCB KEY_TCB;
+void EXTI0_IRQHandler(void)
+{
+	OS_ERR err;
+
+	OSIntEnter();
+	OSTaskSemPost(&KEY_TCB, OS_OPT_POST_NONE, &err);//OSSemPost(&SemOfKey, OS_OPT_POST_ALL, &err);
+	OSIntExit();
+}
 
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/

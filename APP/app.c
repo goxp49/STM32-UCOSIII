@@ -12,16 +12,12 @@
 
 #include "includes.h"
 
-static OS_Q p_q;
 
-static OS_TCB Q_POST_TCB;
-static CPU_STK Q_POST_Stk[128];
+OS_TCB KEY_TCB;
+CPU_STK KEY_Stk[128];
 
-static OS_TCB Q_PEND_TCB;
-static CPU_STK Q_PEND_Stk[128];
+void Task_KEY_EXIT(void *p_arg);
 
-void Task_QUEUE_POST(void *p_arg);
-void Task_QUEUE_PEND(void *p_arg);
 
 int main(void)
 {
@@ -32,19 +28,14 @@ int main(void)
 	OSInit(&err);		//系统初始化
 	Mem_Init();
 
-	OSQCreate((OS_Q *) &p_q,
-		(CPU_CHAR *) "queue",
-		(OS_MSG_QTY) 20,
-		(OS_ERR *) &err);
-
 	/*创建任务*/
 
-	 OSTaskCreate((OS_TCB *)&Q_POST_TCB,	   //任务控制块指针
+	 OSTaskCreate((OS_TCB *)&KEY_TCB,	   //任务控制块指针
 					  (CPU_CHAR   *)"KEY", 	  //任务名称
-					  (OS_TASK_PTR )Task_QUEUE_POST,	  //任务代码指针
+					  (OS_TASK_PTR )Task_KEY_EXIT,	  //任务代码指针
 					  (void 	  *)0,			  //传递给任务的参数parg
 					  (OS_PRIO	   )3,			  //任务优先级
-					  (CPU_STK	  *)&Q_POST_Stk[0],	  //任务堆栈基地址
+					  (CPU_STK	  *)&KEY_Stk[0],	  //任务堆栈基地址
 					  (CPU_STK_SIZE)12, 		  //堆栈剩余警戒线
 					  (CPU_STK_SIZE)128,		  //堆栈大小
 					  (OS_MSG_QTY  )5,			  //可接收的最大消息队列数
@@ -53,25 +44,100 @@ int main(void)
 					  (OS_OPT	   )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),  //任务选项
 					  (OS_ERR	  *)&err);		  //返回值
 
-	OSTaskCreate((OS_TCB *)&Q_PEND_TCB,	  //任务控制块指针
-						 (CPU_CHAR	 *)"LED",		 //任务名称
-						 (OS_TASK_PTR )Task_QUEUE_PEND,	 //任务代码指针
-						 (void		 *)0,			 //传递给任务的参数parg
-						 (OS_PRIO	  )2,			 //任务优先级
-						 (CPU_STK	 *)&Q_PEND_Stk[0], 	 //任务堆栈基地址
-						 (CPU_STK_SIZE)12,			 //堆栈剩余警戒线
-						 (CPU_STK_SIZE)128, 		 //堆栈大小
-						 (OS_MSG_QTY  )5,			 //可接收的最大消息队列数
-						 (OS_TICK	  )0,			 //时间片轮转时间
-						 (void		 *)0,			 //任务控制块扩展信息
-						 (OS_OPT	  )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),  //任务选项
-						 (OS_ERR	 *)&err);		 //返回值
 
     OSStart(&err);
 
 
 }
 
+#if(1)
+
+void Task_KEY_EXIT(void *p_arg)
+{
+	OS_ERR err;
+
+    (void)p_arg;
+
+	while(1)
+	{
+		OSTaskSemPend(0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &err);
+		LED1_Switch();
+	};
+}
+
+
+#endif
+
+
+#if(0)
+void Task_MEM_POST(void *p_arg);
+void Task_MEM_PEND(void *p_arg);
+
+OS_MEM p_mem;
+uint8_t ucArray[3][20];   //声明内存分区大小
+
+OSMemCreate((OS_MEM *) &p_mem,
+	(CPU_CHAR *) "memory",
+	(void *) ucArray,
+	(OS_MEM_QTY) 3,
+	(OS_MEM_SIZE) 20,
+	(OS_ERR *) &err);
+
+
+void Task_MEM_POST(void *p_arg)
+{
+	OS_ERR err;
+    (void)p_arg;                		// 'p_arg' 并没有用到，防止编译器提示警告
+	char *   p_mem_blk;
+
+	while(1)
+	{
+		p_mem_blk = OSMemGet(&p_mem, &err);
+		sprintf( p_mem_blk, "%s", "success" );                //向内存块存取计数值
+		OSTaskQPost(&MEM_PEND_TCB,(void *) p_mem_blk, strlen( p_mem_blk ), OS_OPT_POST_FIFO, &err);
+		OSTimeDlyHMSM ( 0, 0, 0, 400, OS_OPT_TIME_PERIODIC, & err );
+	}
+}
+
+void Task_MEM_PEND(void *p_arg)
+{
+	OS_ERR err;
+    (void)p_arg;                		// 'p_arg' 并没有用到，防止编译器提示警告
+	OS_MSG_SIZE p_msg_size,i;
+	char * Message;
+
+	while(1)
+	{
+		Message = OSTaskQPend(0, OS_OPT_PEND_BLOCKING, &p_msg_size, (void *)0, &err);
+
+		CPU_SR_ALLOC();
+		OS_CRITICAL_ENTER();
+
+		for(i=0; i<p_msg_size; i++)
+		{
+			USART_SendMessage(*Message);
+			Message++;
+		}
+
+		OS_CRITICAL_EXIT();
+		OSMemPut(&p_mem, (void *)Message, &err);
+	}
+}
+
+#endif
+
+
+#if(0)
+static OS_Q p_q;
+
+static OS_TCB Q_POST_TCB;
+static CPU_STK Q_POST_Stk[128];
+
+static OS_TCB Q_PEND_TCB;
+static CPU_STK Q_PEND_Stk[128];
+
+void Task_QUEUE_POST(void *p_arg);
+void Task_QUEUE_PEND(void *p_arg);
 
 void Task_QUEUE_POST(void *p_arg)
 {
@@ -100,13 +166,13 @@ void Task_QUEUE_PEND(void *p_arg)
 	u8 i;
     (void)p_arg;                		// 'p_arg' 并没有用到，防止编译器提示警告
 
-	
+
 	while(1)
 	{
 		Message = (char *)OSQPend((OS_Q *)&p_q, 0, OS_OPT_PEND_BLOCKING, &p_msg_size, (void *)0, &err);
 		if(err == OS_ERR_NONE)
 		{
-		
+
 			CPU_SR_ALLOC();
 			OS_CRITICAL_ENTER();
 
@@ -121,10 +187,10 @@ void Task_QUEUE_PEND(void *p_arg)
 	};
 
 }
-
+#endif
 
 #if(0)
-static OS_SEM SemOfKey;          //标志KEY1是否被单击的多值信号量
+//static OS_SEM SemOfKey;          //标志KEY1是否被单击的多值信号量
 
 void Task_SEM_KEY_SCAN(void *p_arg)
 {
@@ -136,7 +202,7 @@ void Task_SEM_KEY_SCAN(void *p_arg)
 	{
 		if(Key_Scan(GPIOA, GPIO_Pin_0) == KEY_ON)
 		{
-			OSSemPost(&SemOfKey, OS_OPT_POST_ALL, &err);
+			OSTaskSemPost(&LED_PEND_TCB, OS_OPT_POST_NONE, &err);//OSSemPost(&SemOfKey, OS_OPT_POST_ALL, &err);
 		}
 
 	};
@@ -151,7 +217,7 @@ void Task_SEM_LED(void *p_arg)
 
 	while(1)
 	{
-		OSSemPend(&SemOfKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS*)0, &err);
+		OSTaskSemPend(0, OS_OPT_PEND_BLOCKING, (CPU_TS *)0, &err);//OSSemPend(&SemOfKey, 0, OS_OPT_PEND_BLOCKING, (CPU_TS*)0, &err);
 		LED1_Switch();
 	};
 

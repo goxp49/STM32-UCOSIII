@@ -20,16 +20,12 @@
  */
 void BSP_Init(void)
 {
-    CPU_INT32U  cpu_clk_freq;
-	CPU_INT32U	cnts;
+    OS_CPU_SysTickInit(BSP_CPU_ClkFreq() / (CPU_INT32U)OSCfg_TickRate_Hz);   //调用 SysTick 初始化函数，设置定时器计数值和启动定时器
 
-    cpu_clk_freq = BSP_CPU_ClkFreq();                           //获取 CPU 内核时钟频率（SysTick 工作时钟）
-    cnts = cpu_clk_freq / (CPU_INT32U)OSCfg_TickRate_Hz;        //根据用户设定的时钟节拍频率计算 SysTick 定时器的计数值
-    OS_CPU_SysTickInit(cnts);                                   //调用 SysTick 初始化函数，设置定时器计数值和启动定时器
-    
     LED_GPIO_Config();  /* LED 端口初始化 */
-	//Key_GPIO_Config();
-	USART1_Config();
+	Key_GPIO_Config();
+	//USART1_Config();
+	EXTI_Config();
 }
 
 /*
@@ -47,6 +43,42 @@ void SysTick_init(void)
 		while (1);
 	}
 }
+
+void EXTI_Config(void)
+{
+	EXTI_InitTypeDef EXTI_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+	/*   NVIC INIT */
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
+
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
+
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+
+	NVIC_Init(&NVIC_InitStructure);
+
+	/*   EXTI INIT  */
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
+
+	EXTI_InitStructure.EXTI_Line = EXTI_Line0;
+
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+
+	EXTI_Init(&EXTI_InitStructure);
+
+}
+
+
+
 
 /*
 *********************************************************************************************************
